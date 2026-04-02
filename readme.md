@@ -5,7 +5,7 @@ A lightweight web-based management tool for MusicBots. This panel allows you to 
 ## 🚀 Features
 - **Dual Protocol Support:** Works with both SFTP (SSH) and classic FTP.
 - **Easy Upload:** Multi-file upload support with real-time status notifications.
-- **Playlist Sync:** Automatically your autplaylist.txt or .txt you like to.
+- **Playlist Sync:** Automatically update your autoplaylist.txt or .txt you like to.
 - **Bulk Delete:** Select multiple songs and delete them at once.
 - **Search:** Quickly find songs in your library.
 - **Recently Added:** Shows your 5 latest uploads at a glance.
