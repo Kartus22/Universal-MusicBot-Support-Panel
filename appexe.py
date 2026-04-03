@@ -273,4 +273,5 @@ def delete_bulk():
     return jsonify({"status": "success"})
 
 if __name__ == '__main__':
-    app.run(debug=False, port=5000)
+    app.run(host='127.0.0.1', debug=False, port=5000)
+    
