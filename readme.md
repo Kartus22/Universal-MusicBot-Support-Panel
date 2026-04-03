@@ -34,5 +34,5 @@ pip install pyinstaller
 Build the EXE:
 
 Bash
-pyinstaller --onefile --name "MusicBot_Support_Panel" appexe.py
+python -m PyInstaller --onefile --name "MusicBot_Support_Panel" appexe.py
 Find your file in the dist/ folder.
