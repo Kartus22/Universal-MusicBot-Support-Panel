@@ -1,39 +1,35 @@
-🎵 MusicBot Support Panel
-A local desktop tool with a web-based interface for managing Discord MusicBots. > This application runs directly on your own computer and connects to your remote bot server via SFTP/FTP. It provides a clean, modern web UI in your browser, allowing you to manage your remote music library and sync playlists without ever needing to touch an SSH terminal.
+# 🎵 MusicBot Support Panel
 
-✨ Core Features
-Local Execution, Remote Management: Runs entirely on your local PC (127.0.0.1). Nothing needs to be installed on your bot's server.
+> **A local desktop tool with a web-based interface for managing Discord MusicBots.** > This application runs directly on your own computer and connects to your remote bot server via SFTP/FTP. It provides a clean, modern web UI in your browser, allowing you to manage your remote music library and sync playlists without ever needing to touch an SSH terminal.
 
-Hybrid Protocol Engine: Seamlessly connects to your remote server using SFTP (Secure Shell) or standard FTP.
+## ✨ Core Features
 
-Intelligent Playlist Sync: Select any existing .txt playlist on your server via the dropdown menu. The panel scans your remote media directory and updates the selected file with file:// URIs.
+* **Local Execution, Remote Management:** Runs entirely on your local PC (`127.0.0.1`). Nothing needs to be installed on your bot's server.
+* **Hybrid Protocol Engine:** Seamlessly connects to your remote server using **SFTP (Secure Shell)** or standard **FTP**.
+* **Intelligent Playlist Sync:** Select any existing `.txt` playlist on your server via the dropdown menu. The panel scans your remote media directory and updates the selected file with `file://` URIs.
+* **Asynchronous Web UI:** Built with modern JS/Fetch API for real-time progress tracking. The page doesn't reload during batch operations.
+* **Batch Operations:** High-speed bulk deletion and multi-file uploads from your PC directly to the server.
+* **Smart Library Management:** * Instant search and filtering of large audio collections (`.mp3`, `.opus`, `.m4a`, `.wav`).
+  * Dedicated dashboard section highlighting the 5 most recently added tracks.
 
-Asynchronous Web UI: Built with modern JS/Fetch API for real-time progress tracking. The page doesn't reload during batch operations.
+---
 
-Batch Operations: High-speed bulk deletion and multi-file uploads from your PC directly to the server.
+## 🚀 Installation & Quick Start
 
-Smart Library Management: * Instant search and filtering of large audio collections (.mp3, .opus, .m4a, .wav).
-
-Dedicated dashboard section highlighting the 5 most recently added tracks.
-
-🚀 Installation & Quick Start
-Option A: The Standalone Executable (Windows Only)
+### Option A: The Standalone Executable (Windows Only)
 The easiest way to use the tool. No Python installation required.
 
-Download the MusicBot_Support_Panel.exe from the Releases tab.
+1. Download the `MusicBot_Support_Panel.exe` from the **Releases** tab.
+2. Launch the executable. *(A command console will remain open to display connection logs and allow you to safely close the app).*
+3. Open your web browser and navigate to `http://127.0.0.1:5000`.
 
-Launch the executable. (A command console will remain open to display connection logs and allow you to safely close the app).
-
-Open your web browser and navigate to http://127.0.0.1:5000.
-
-Option B: Run from Source (Cross-Platform)
+### Option B: Run from Source (Cross-Platform)
 For developers or users on Linux/macOS.
 
-Clone the repository (or download the appexe.py file):
-
-Bash
-git clone https://github.com/Kartus22/MusicBot-Support-Panel.git
-cd MusicBot-Support-Panel
+1. **Clone the repository** (or download the `appexe.py` file):
+   ```bash
+   git clone [https://github.com/Kartus22/MusicBot-Support-Panel.git](https://github.com/Kartus22/MusicBot-Support-Panel.git)
+   cd MusicBot-Support-Panel
 Install dependencies:
 
 Bash
@@ -69,3 +65,14 @@ Zero Server Installation: This tool leaves no footprint on your server other tha
 Local Storage Only: Your remote server credentials are saved only on your personal machine (config.json).
 
 No Telemetry: This application does not track usage or communicate with any third-party APIs.
+
+🛡️ Antivirus / Windows SmartScreen Notice
+Since this application is compiled using PyInstaller and is not signed with an expensive enterprise certificate, Windows SmartScreen or some Antivirus programs might flag it as "unknown" or "suspicious".
+
+When scanning the .exe on VirusTotal, 2 out of 71 vendors (usually AI-based heuristic scanners like Bkav or SecureAge) might flag it as a generic malware.
+
+This is a known false positive for standalone Python applications. The big vendors (Microsoft, Kaspersky, Malwarebytes) rate it as 100% clean.
+
+You can view the live [VirusTotal Scan Report here.](https://www.virustotal.com/gui/file/b455542bfbb45e56282f226e2d751f151fd68af0b2cf50513ad1818be0e0c35c/detection)
+
+💡 Still suspicious? We completely understand! You are highly encouraged to ignore the .exe, review the open-source code yourself, and run the appexe.py directly via Python!
