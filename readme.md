@@ -1,38 +1,71 @@
-# MusicBot Support Panel 🎵
+🎵 MusicBot Support Panel
+A local desktop tool with a web-based interface for managing Discord MusicBots. > This application runs directly on your own computer and connects to your remote bot server via SFTP/FTP. It provides a clean, modern web UI in your browser, allowing you to manage your remote music library and sync playlists without ever needing to touch an SSH terminal.
 
-A lightweight web-based management tool for MusicBots. This panel allows you to manage your music files via SFTP or FTP, synchronize playlists, and perform bulk deletions directly from your browser.
+✨ Core Features
+Local Execution, Remote Management: Runs entirely on your local PC (127.0.0.1). Nothing needs to be installed on your bot's server.
 
-## 🚀 Features
-- **Dual Protocol Support:** Works with both SFTP (SSH) and classic FTP.
-- **Easy Upload:** Multi-file upload support with real-time status notifications.
-- **Playlist Sync:** Automatically update your autoplaylist.txt or .txt you like to.
-- **Bulk Delete:** Select multiple songs and delete them at once.
-- **Search:** Quickly find songs in your library.
-- **Recently Added:** Shows your 5 latest uploads at a glance.
+Hybrid Protocol Engine: Seamlessly connects to your remote server using SFTP (Secure Shell) or standard FTP.
 
-## 🛠️ Installation
+Intelligent Playlist Sync: Select any existing .txt playlist on your server via the dropdown menu. The panel scans your remote media directory and updates the selected file with file:// URIs.
 
-### 1. Run from Source (Python)
-If you want to run the script directly:
-1. Clone this repository or download the `appexe.py`.
-2. Install dependencies:
-   ```bash
-   pip install flask paramiko
-Start the application:
+Asynchronous Web UI: Built with modern JS/Fetch API for real-time progress tracking. The page doesn't reload during batch operations.
+
+Batch Operations: High-speed bulk deletion and multi-file uploads from your PC directly to the server.
+
+Smart Library Management: * Instant search and filtering of large audio collections (.mp3, .opus, .m4a, .wav).
+
+Dedicated dashboard section highlighting the 5 most recently added tracks.
+
+🚀 Installation & Quick Start
+Option A: The Standalone Executable (Windows Only)
+The easiest way to use the tool. No Python installation required.
+
+Download the MusicBot_Support_Panel.exe from the Releases tab.
+
+Launch the executable. (A command console will remain open to display connection logs and allow you to safely close the app).
+
+Open your web browser and navigate to http://127.0.0.1:5000.
+
+Option B: Run from Source (Cross-Platform)
+For developers or users on Linux/macOS.
+
+Clone the repository (or download the appexe.py file):
+
+Bash
+git clone https://github.com/Kartus22/MusicBot-Support-Panel.git
+cd MusicBot-Support-Panel
+Install dependencies:
+
+Bash
+pip install -r requirements.txt
+Launch the local server:
 
 Bash
 python appexe.py
-Open http://127.0.0.1:5000 in your browser.
+Access the panel at http://127.0.0.1:5000.
 
-2. Build your own EXE
-To create a standalone executable for Windows:
+⚙️ Initial Setup
+Upon the first launch, the local web interface will automatically redirect you to the Setup Page. You will be prompted to configure your connection to the remote bot:
 
-Install PyInstaller:
+Connection: Your remote server's Host IP, Port, Username, and Password.
+
+Media Path: The directory on your remote server where audio files are stored (e.g., media/).
+
+Playlist Folder: The directory on your remote server where your bot expects its .txt files (e.g., config/playlists/).
+
+All configurations are saved securely on your local hard drive in a config.json file. You only need to set this up once.
+
+🏗️ Build It Yourself (For Developers)
+Want to compile the Windows .exe yourself? It is highly recommended to use PyInstaller without the --noconsole flag to retain the diagnostic terminal:
 
 Bash
 pip install pyinstaller
-Build the EXE:
-
-Bash
 python -m PyInstaller --onefile --name "MusicBot_Support_Panel" appexe.py
-Find your file in the dist/ folder.
+The compiled binary will be located in the dist/ folder.
+
+🔒 Security & Privacy Policy
+Zero Server Installation: This tool leaves no footprint on your server other than the uploaded audio and modified .txt files.
+
+Local Storage Only: Your remote server credentials are saved only on your personal machine (config.json).
+
+No Telemetry: This application does not track usage or communicate with any third-party APIs.
