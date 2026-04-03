@@ -76,3 +76,7 @@ This is a known false positive for standalone Python applications. The big vendo
 You can view the live [VirusTotal Scan Report here.](https://www.virustotal.com/gui/file/b455542bfbb45e56282f226e2d751f151fd68af0b2cf50513ad1818be0e0c35c/detection)
 
 💡 Still suspicious? We completely understand! You are highly encouraged to ignore the .exe, review the open-source code yourself, and run the appexe.py directly via Python!
+
+<img width="464" height="573" alt="image" src="https://github.com/user-attachments/assets/61b2306d-9d05-468b-be77-a1f15ab76344" /> 
+<img width="681" height="1007" alt="image" src="https://github.com/user-attachments/assets/e8d3ad0f-1d32-45a9-92a4-03a0e49b7c7b" />
+
