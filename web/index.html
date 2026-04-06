@@ -3,36 +3,38 @@
 <head>
     <title>MusicBot Support Panel</title>
     <script type="text/javascript" src="/eel.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
         .container { max-width: 1000px; margin: auto; padding-bottom: 80px; }
         .card { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #3498db; }
-        .btn { padding: 10px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
+        .btn { padding: 10px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn:hover { filter: brightness(1.1); }
         .btn-sync { background: #9b59b6; color: white; flex-grow: 1; }
         .btn-upload { background: #2ecc71; color: white; width: 100%; margin-top: 15px; }
         .btn-delete-bulk { background: #e74c3c; color: white; margin-bottom: 15px; display: none; width: 100%; }
         .song-item { background: #2c2c2c; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
         
-        input[type="text"], input[type="password"], select { padding: 10px; background: #252525; color: white; border: 1px solid #444; border-radius: 5px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
+        input[type="text"], input[type="password"], select, textarea { 
+            padding: 10px; background: #252525; color: white; border: 1px solid #444; border-radius: 5px; width: 100%; margin-bottom: 10px; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; 
+        }
         input[type="checkbox"] { transform: scale(1.3); cursor: pointer; width: auto; margin-bottom: 0; }
         
         .sync-bar { display: flex; gap: 10px; margin-bottom: 10px; align-items: center; }
-        #status-toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; background: #333; color: white; display: none; align-items: center; gap: 10px; z-index: 1000; border-bottom: 4px solid #3498db; }
+        #status-toast { position: fixed; bottom: 20px; right: 20px; padding: 15px 25px; border-radius: 10px; background: #333; color: white; display: none; align-items: center; gap: 10px; z-index: 1000; border-bottom: 4px solid #3498db; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
         
-        /* Fortschrittsanzeige */
         .progress-container { width: 100%; background-color: #252525; border-radius: 5px; margin-top: 15px; display: none; overflow: hidden;}
         .progress-bar { height: 20px; width: 0%; background-color: #2ecc71; transition: width 0.3s; }
         .progress-text { margin-top: 5px; font-size: 0.9em; color: #aaa; text-align: center; display: none; }
 
-        /* Split Screen CSS */
         .split-view { display: flex; gap: 20px; align-items: flex-start; }
         .split-left { flex: 1; min-width: 0; }
         .split-right { flex: 1; min-width: 0; position: sticky; top: 20px;}
-        .playlist-viewer { background: #121212; padding: 10px; border-radius: 5px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em; border: 1px solid #333;}
-        .pl-line { padding: 4px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;}
+        .playlist-viewer { background: #121212; padding: 10px; border-radius: 5px; height: 500px; overflow-y: auto; font-family: monospace; font-size: 0.85em; border: 1px solid #333;}
+        .pl-line { padding: 8px 4px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;}
         .pl-line:hover { background: #252525; }
         .pl-line-text { flex-grow: 1; word-break: break-all; margin-right: 10px;}
-        .pl-del-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2em; padding: 0 5px; }
+        .pl-del-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2em; padding: 0 5px; transition: transform 0.2s; }
         .pl-del-btn:hover { color: #c0392b; transform: scale(1.2); }
 
         #setup-view, #main-view { display: none; }
@@ -43,7 +45,7 @@
 
     <div id="setup-view" class="container">
         <div class="card" style="max-width: 400px; margin: 100px auto;">
-            <h2>⚙️ Support Setup</h2>
+            <h2 id="t_setupTitle"><i class="fa-solid fa-gear"></i> Support Setup</h2>
             <select id="s_proto"><option value="SFTP">SFTP</option><option value="FTP">FTP</option></select>
             <input type="text" id="s_host" placeholder="Host" required>
             <input type="text" id="s_port" placeholder="Port" value="2022" required>
@@ -51,78 +53,216 @@
             <input type="password" id="s_password" placeholder="Password" required>
             <input type="text" id="s_media" placeholder="Media Path" value="media" required>
             <input type="text" id="s_playlist" placeholder="Playlist Folder" value="config/playlists" required>
-            <button onclick="saveSetup()" class="btn btn-sync" style="width: 100%">Save & Connect</button>
+            <button onclick="saveSetup()" class="btn btn-sync" style="width: 100%" id="t_btnSaveConn"><i class="fa-solid fa-link"></i> Save & Connect</button>
         </div>
     </div>
 
     <div id="main-view" class="container">
-        <h1>🎵 MusicBot Support Panel</h1>
-        <p id="conn-info">Connected: <b>...</b> | <a href="#" onclick="showSetup()" style="color:#3498db;">Settings</a></p>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+            <h1 id="t_mainTitle"><i class="fa-solid fa-music"></i> MusicBot Support Panel</h1>
+            <select id="lang-select" onchange="changeLanguage()" style="width: auto; margin-bottom: 0; padding: 5px 10px;">
+                <option value="en">🇬🇧 English</option>
+                <option value="de">🇩🇪 Deutsch</option>
+            </select>
+        </div>
+        
+        <p id="conn-info-container"><span id="t_connected">Connected:</span> <b id="conn-host">...</b> | <a href="#" onclick="showSetup()" style="color:#3498db;" id="t_settings"><i class="fa-solid fa-gear"></i> Settings</a></p>
         
         <div class="card" style="border-left-color: #9b59b6;">
-            <h3>📋 Playlist Management</h3>
-            <select id="playlist-select" style="width: 100%; margin-bottom: 15px;" onchange="loadPlaylistContent()"></select>
+            <h3 id="t_plMgmt"><i class="fa-solid fa-list-ol"></i> Playlist Management</h3>
+            
+            <div class="sync-bar" style="margin-bottom: 15px;">
+                <select id="playlist-select" style="flex-grow: 1; margin-bottom: 0;" onchange="loadPlaylistContent()"></select>
+                <button onclick="createPlaylist()" class="btn" style="background: #2ecc71; color: white; margin-bottom: 0;" id="t_btnNew"><i class="fa-solid fa-plus"></i> New</button>
+                <button onclick="deletePlaylist()" class="btn" style="background: #e74c3c; color: white; margin-bottom: 0;" id="t_btnDelete"><i class="fa-solid fa-trash-can"></i> Delete</button>
+            </div>
 
             <div class="sync-bar" style="flex-wrap: wrap;">
-                <button onclick="syncPlaylist()" class="btn btn-sync" style="background: #8e44ad;">🔄 Sync Local Media to Playlist</button>
+                <button onclick="syncPlaylist()" class="btn btn-sync" style="background: #8e44ad;" id="t_btnSync"><i class="fa-solid fa-rotate"></i> Sync Local Media to Playlist (Creates Backup)</button>
                 <div style="width: 100%; font-size: 0.8em; color: #aaa; text-align: center; margin-top: -5px;">
-                    <i>(Only click this to write uploaded media files into the playlist. YouTube links below are saved automatically!)</i>
+                    <i id="t_syncHint">(Only click this to write uploaded media files into the playlist. YouTube links below are saved automatically!)</i>
                 </div>
             </div>
             <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
-            <div class="sync-bar">
-                <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." style="flex-grow: 2; margin-bottom: 0;">
-                <button onclick="addYouTube()" class="btn btn-sync" style="background: #e74c3c;">▶️ Add YouTube Link</button>
+            <div style="display: flex; gap: 10px; align-items: stretch;">
+                <textarea id="youtube-urls" rows="3" placeholder="Paste YouTube links here (one per line)..." style="flex-grow: 1; resize: vertical; margin-bottom:0;"></textarea>
+                <button onclick="addYouTube()" class="btn btn-sync" style="background: #e74c3c; white-space: nowrap;" id="t_btnMassAdd"><i class="fa-brands fa-youtube"></i> Mass-Add Links</button>
+            </div>
+            
+            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
+            <h4 style="margin-top: 0; margin-bottom: 10px;" id="t_backups"><i class="fa-solid fa-file-shield"></i> Backups (.bak)</h4>
+            <div id="backup-list" style="max-height: 120px; overflow-y: auto; background: #121212; padding: 10px; border-radius: 5px; border: 1px solid #333;">
+                <i>No backups found.</i>
             </div>
         </div>
 
         <div class="card">
-            <h3>🚀 Upload Media Files</h3>
-            <button id="upload-btn" onclick="triggerUpload()" class="btn btn-upload" style="margin-top: 0;">Select Files to Upload...</button>
+            <h3 id="t_uploadMedia"><i class="fa-solid fa-cloud-arrow-up"></i> Upload Media Files</h3>
+            <button id="upload-btn" onclick="triggerUpload()" class="btn btn-upload" style="margin-top: 0;"><i class="fa-solid fa-folder-open"></i> <span id="t_btnSelectFiles">Select Files to Upload...</span></button>
             <div id="progress-container" class="progress-container"><div id="progress-bar" class="progress-bar"></div></div>
             <div id="progress-text" class="progress-text">0 / 0 - Preparing...</div>
         </div>
 
         <div class="split-view">
-            
             <div class="split-left">
                 <div class="card" style="border-left-color: #f1c40f;">
-                    <h3>📂 Server Media Files</h3>
-                    <button id="bulk-delete-btn" onclick="bulkDelete()" class="btn btn-delete-bulk">🗑️ Delete Selected</button>
-                    
+                    <h3 id="t_serverMedia"><i class="fa-solid fa-server"></i> Server Media Files</h3>
+                    <button id="bulk-delete-btn" onclick="bulkDelete()" class="btn btn-delete-bulk"><i class="fa-solid fa-trash-can"></i> <span id="t_btnDelSelectedMedia">Delete Selected</span></button>
                     <div class="sync-bar" style="margin-bottom: 15px;">
                         <input type="text" id="search-input" placeholder="Search files..." style="margin-bottom:0;">
-                        <button class="btn" onclick="loadData()" style="background:#444; color:white;">🔍</button>
+                        <button class="btn" onclick="loadData()" style="background:#444; color:white;"><i class="fa-solid fa-magnifying-glass"></i></button>
                     </div>
-
                     <div id="recent-box" style="margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;">
-                        <h4 style="margin-top: 0; color: #f1c40f;">✨ Recently Added</h4>
+                        <h4 style="margin-top: 0; color: #f1c40f;" id="t_recentAdd"><i class="fa-solid fa-clock-rotate-left"></i> Recently Added</h4>
                         <div id="recent-list"></div>
                     </div>
-
                     <div id="song-list"></div>
                 </div>
             </div>
-
             <div class="split-right">
                 <div class="card" style="border-left-color: #e67e22; height: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <h3 style="margin: 0;">📄 Playlist Content</h3>
-                        <button onclick="loadPlaylistContent()" class="btn" style="background: #444; color: white; padding: 5px 10px; font-size: 0.8em;">🔄 Refresh</button>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0;" id="t_plContent"><i class="fa-solid fa-file-lines"></i> Playlist Content</h3>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" id="pl-search" placeholder="Filter lines..." onkeyup="filterPlaylist()" style="margin:0; padding: 5px 10px; width: 150px;">
+                            <button onclick="loadPlaylistContent()" class="btn" style="background: #444; color: white; padding: 5px 10px; font-size: 0.8em;" id="t_btnRefresh"><i class="fa-solid fa-arrows-rotate"></i> Refresh</button>
+                        </div>
                     </div>
-                    <p style="font-size: 0.8em; color: #aaa;">Contents of the currently selected .txt file:</p>
                     
+                    <button id="pl-bulk-delete-btn" onclick="bulkDeletePlaylist()" class="btn btn-delete-bulk" style="margin-top: 10px; margin-bottom: 15px;"><i class="fa-solid fa-trash-can"></i> <span id="t_btnDelSelectedPl">Delete Selected</span></button>
+
                     <div id="playlist-viewer" class="playlist-viewer">
-                        <i>Select a playlist above to view its contents...</i>
+                        <i id="t_selectPl">Select a playlist above to view its contents...</i>
                     </div>
                 </div>
             </div>
-
         </div>
-        </div>
+    </div>
 
     <script>
-        // Init
+        // --- TRANSLATION DICTIONARY ---
+        const i18n = {
+            en: {
+                setupTitle: "<i class='fa-solid fa-gear'></i> Support Setup",
+                btnSaveConn: "<i class='fa-solid fa-link'></i> Save & Connect",
+                mainTitle: "<i class='fa-solid fa-music'></i> MusicBot Support Panel",
+                connected: "Connected:",
+                settings: "<i class='fa-solid fa-gear'></i> Settings",
+                plMgmt: "<i class='fa-solid fa-list-ol'></i> Playlist Management",
+                btnNew: "<i class='fa-solid fa-plus'></i> New",
+                btnDelete: "<i class='fa-solid fa-trash-can'></i> Delete",
+                btnSync: "<i class='fa-solid fa-rotate'></i> Sync Local Media to Playlist (Creates Backup)",
+                syncHint: "(Only click this to write uploaded media files into the playlist. YouTube links below are saved automatically!)",
+                btnMassAdd: "<i class='fa-brands fa-youtube'></i> Mass-Add Links",
+                backups: "<i class='fa-solid fa-file-shield'></i> Backups (.bak)",
+                uploadMedia: "<i class='fa-solid fa-cloud-arrow-up'></i> Upload Media Files",
+                btnSelectFiles: "Select Files to Upload...",
+                serverMedia: "<i class='fa-solid fa-server'></i> Server Media Files",
+                btnDelSelectedMedia: "Delete Selected",
+                btnDelSelectedPl: "Delete Selected",
+                recentAdd: "<i class='fa-solid fa-clock-rotate-left'></i> Recently Added",
+                plContent: "<i class='fa-solid fa-file-lines'></i> Playlist Content",
+                btnRefresh: "<i class='fa-solid fa-arrows-rotate'></i> Refresh",
+                selectPl: "<i>Select a playlist above to view its contents...</i>",
+                placeholderYT: "Paste YouTube links here (one per line)...",
+                placeholderSearch: "Search files...",
+                placeholderFilter: "Filter lines...",
+                
+                // JS Strings
+                msgPlEmpty: "<i>Playlist is empty.</i>",
+                msgLoading: "<i>Loading content from server...</i>",
+                msgNoBackups: "<i>No backups found.</i>",
+                msgSelectPlTarget: "Please select a target playlist first!",
+                msgValidYt: "Please enter at least one valid YouTube URL!",
+                msgDeletePlWarn: "WARNING: Are you sure you want to permanently delete the playlist '{name}' from the server?\\n\\nThis cannot be undone!",
+                msgDeleteBakWarn: "Do you really want to delete the backup file '{name}'?",
+                msgDeleteLineWarn: "Do you really want to remove this entry from the playlist?\\n\\n{name}",
+                msgDeleteBulkWarn: "Delete {count} selected files/lines?",
+                msgPromptNewPl: "Enter the name for the new playlist (e.g. 'rock_music'):",
+                msgSelectPlDrop: "Select target .txt file..."
+            },
+            de: {
+                setupTitle: "<i class='fa-solid fa-gear'></i> Support Setup",
+                btnSaveConn: "<i class='fa-solid fa-link'></i> Speichern & Verbinden",
+                mainTitle: "<i class='fa-solid fa-music'></i> MusicBot Support Panel",
+                connected: "Verbunden:",
+                settings: "<i class='fa-solid fa-gear'></i> Einstellungen",
+                plMgmt: "<i class='fa-solid fa-list-ol'></i> Playlist-Verwaltung",
+                btnNew: "<i class='fa-solid fa-plus'></i> Neu",
+                btnDelete: "<i class='fa-solid fa-trash-can'></i> Löschen",
+                btnSync: "<i class='fa-solid fa-rotate'></i> Lokale Medien mit Playlist synch. (Erstellt Backup)",
+                syncHint: "(Klicke hier nur, um hochgeladene Dateien in die Playlist zu schreiben. YouTube-Links werden automatisch gespeichert!)",
+                btnMassAdd: "<i class='fa-brands fa-youtube'></i> Links Massen-Hinzufügen",
+                backups: "<i class='fa-solid fa-file-shield'></i> Backups (.bak)",
+                uploadMedia: "<i class='fa-solid fa-cloud-arrow-up'></i> Mediendateien hochladen",
+                btnSelectFiles: "Dateien zum Upload auswählen...",
+                serverMedia: "<i class='fa-solid fa-server'></i> Server Mediendateien",
+                btnDelSelectedMedia: "Ausgewählte löschen",
+                btnDelSelectedPl: "Ausgewählte löschen",
+                recentAdd: "<i class='fa-solid fa-clock-rotate-left'></i> Kürzlich hinzugefügt",
+                plContent: "<i class='fa-solid fa-file-lines'></i> Playlist-Inhalt",
+                btnRefresh: "<i class='fa-solid fa-arrows-rotate'></i> Aktualisieren",
+                selectPl: "<i>Wähle oben eine Playlist aus, um den Inhalt zu sehen...</i>",
+                placeholderYT: "Füge YouTube-Links hier ein (einen pro Zeile)...",
+                placeholderSearch: "Dateien suchen...",
+                placeholderFilter: "Zeilen filtern...",
+                
+                // JS Strings
+                msgPlEmpty: "<i>Playlist ist leer.</i>",
+                msgLoading: "<i>Lade Inhalt vom Server...</i>",
+                msgNoBackups: "<i>Keine Backups gefunden.</i>",
+                msgSelectPlTarget: "Bitte wähle zuerst eine Playlist aus dem Dropdown aus!",
+                msgValidYt: "Bitte gib mindestens einen gültigen YouTube-Link ein!",
+                msgDeletePlWarn: "WARNUNG: Bist du sicher, dass du die Playlist '{name}' unwiderruflich vom Server löschen möchtest?\\n\\nDies kann nicht rückgängig gemacht werden!",
+                msgDeleteBakWarn: "Möchtest du das Backup '{name}' wirklich löschen?",
+                msgDeleteLineWarn: "Möchtest du diesen Eintrag wirklich aus der Playlist entfernen?\\n\\n{name}",
+                msgDeleteBulkWarn: "{count} ausgewählte Dateien/Zeilen wirklich löschen?",
+                msgPromptNewPl: "Gib den Namen für die neue Playlist ein (z.B. 'rock_musik'):",
+                msgSelectPlDrop: "Wähle .txt Datei..."
+            }
+        };
+
+        function getLang() { return document.getElementById('lang-select').value; }
+        function t(key) { return i18n[getLang()][key]; }
+
+        function changeLanguage() {
+            let l = getLang();
+            document.getElementById('t_setupTitle').innerHTML = i18n[l].setupTitle;
+            document.getElementById('t_btnSaveConn').innerHTML = i18n[l].btnSaveConn;
+            document.getElementById('t_mainTitle').innerHTML = i18n[l].mainTitle;
+            document.getElementById('t_connected').innerHTML = i18n[l].connected;
+            document.getElementById('t_settings').innerHTML = i18n[l].settings;
+            document.getElementById('t_plMgmt').innerHTML = i18n[l].plMgmt;
+            document.getElementById('t_btnNew').innerHTML = i18n[l].btnNew;
+            document.getElementById('t_btnDelete').innerHTML = i18n[l].btnDelete;
+            document.getElementById('t_btnSync').innerHTML = i18n[l].btnSync;
+            document.getElementById('t_syncHint').innerHTML = i18n[l].syncHint;
+            document.getElementById('t_btnMassAdd').innerHTML = i18n[l].btnMassAdd;
+            document.getElementById('t_backups').innerHTML = i18n[l].backups;
+            document.getElementById('t_uploadMedia').innerHTML = i18n[l].uploadMedia;
+            document.getElementById('t_btnSelectFiles').innerHTML = i18n[l].btnSelectFiles;
+            document.getElementById('t_serverMedia').innerHTML = i18n[l].serverMedia;
+            document.getElementById('t_btnDelSelectedMedia').innerHTML = i18n[l].btnDelSelectedMedia;
+            document.getElementById('t_btnDelSelectedPl').innerHTML = i18n[l].btnDelSelectedPl;
+            document.getElementById('t_recentAdd').innerHTML = i18n[l].recentAdd;
+            document.getElementById('t_plContent').innerHTML = i18n[l].plContent;
+            document.getElementById('t_btnRefresh').innerHTML = i18n[l].btnRefresh;
+            
+            if (document.getElementById('playlist-viewer').innerText.includes('Select') || document.getElementById('playlist-viewer').innerText.includes('Wähle')) {
+                document.getElementById('playlist-viewer').innerHTML = i18n[l].selectPl;
+            }
+
+            document.getElementById('youtube-urls').placeholder = i18n[l].placeholderYT;
+            document.getElementById('search-input').placeholder = i18n[l].placeholderSearch;
+            document.getElementById('pl-search').placeholder = i18n[l].placeholderFilter;
+
+            // Trigger reload of dynamic texts
+            loadData();
+            if (document.getElementById('playlist-select').value) loadPlaylistContent();
+        }
+
+        // --- CORE LOGIC ---
+
         async function init() {
             let conf = await eel.check_config()();
             if (conf) {
@@ -151,9 +291,9 @@
 
         function showStatus(text, autoHide=true) {
             let t = document.getElementById('status-toast');
-            document.getElementById('status-text').innerText = text;
+            document.getElementById('status-text').innerHTML = text;
             t.style.display = 'flex';
-            if(autoHide) setTimeout(() => { t.style.display = 'none'; }, 2500);
+            if(autoHide) setTimeout(() => { t.style.display = 'none'; }, 3000);
         }
 
         async function saveSetup() {
@@ -168,51 +308,61 @@
                 playlist_folder: document.getElementById('s_playlist').value
             };
             let res = await eel.save_setup(conf)();
-            if (res.success) { showStatus("Connected!"); showMain(); }
-            else { showStatus("❌ Error: " + res.error, false); }
+            if (res.success) { showStatus("<i class='fa-solid fa-check'></i> Connected!"); showMain(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Error: " + res.error, false); }
         }
 
         async function loadData() {
-            showStatus("Loading data...", false);
             let search = document.getElementById('search-input').value;
             let data = await eel.get_data(search)();
-            
-            if (data.error) { showStatus("❌ " + data.error, false); return; }
+            if (data.error) { showStatus("<i class='fa-solid fa-xmark'></i> " + data.error, false); return; }
 
-            document.getElementById('conn-info').innerHTML = `Connected: <b>${data.conf.host} (${data.conf.proto})</b>`;
+            document.getElementById('conn-host').innerText = `${data.conf.host} (${data.conf.proto})`;
 
             let pSelect = document.getElementById('playlist-select');
             let currentSelection = pSelect.value;
-            
-            pSelect.innerHTML = '<option value="" disabled selected>Select target .txt file...</option>';
+            pSelect.innerHTML = `<option value="" disabled selected>${t('msgSelectPlDrop')}</option>`;
             data.playlists.forEach(p => {
                 let sel = (p === currentSelection) ? "selected" : "";
                 pSelect.innerHTML += `<option value="${p}" ${sel}>${p}</option>`;
             });
 
+            let bList = document.getElementById('backup-list');
+            if (data.backups.length === 0) {
+                bList.innerHTML = t('msgNoBackups');
+            } else {
+                let bHtml = "";
+                data.backups.forEach(b => {
+                    bHtml += `
+                    <div class="pl-line" style="padding: 4px;">
+                        <span class="pl-line-text" style="color: #aaa; font-size: 0.9em;"><i class="fa-solid fa-file-code"></i> ${b}</span>
+                        <button class="pl-del-btn" onclick="deleteBackup('${b}')" title="Delete backup"><i class="fa-solid fa-trash-can"></i></button>
+                    </div>`;
+                });
+                bList.innerHTML = bHtml;
+            }
+
             const renderSongs = (arr, containerId) => {
                 let html = "";
                 arr.forEach(s => {
-                    html += `
-                    <div class="song-item">
-                        <input type="checkbox" class="song-checkbox" value="${s.name}" onchange="toggleBulk()">
-                        <span style="flex-grow:1; word-break: break-all;">${s.name}</span>
-                    </div>`;
+                    html += `<div class="song-item"><input type="checkbox" class="song-checkbox" value="${s.name}" onchange="toggleBulk()"><span style="flex-grow:1; word-break: break-all;">${s.name}</span></div>`;
                 });
                 document.getElementById(containerId).innerHTML = html;
             };
-
             renderSongs(data.songs_recent, 'recent-list');
             renderSongs(data.songs_all, 'song-list');
-            
             document.getElementById('recent-box').style.display = search ? 'none' : 'block';
             toggleBulk();
-            document.getElementById('status-toast').style.display = 'none';
         }
 
         function toggleBulk() {
             let count = document.querySelectorAll('.song-checkbox:checked').length;
             document.getElementById('bulk-delete-btn').style.display = count > 0 ? 'block' : 'none';
+        }
+
+        function togglePlBulk() {
+            let count = document.querySelectorAll('.pl-checkbox:checked').length;
+            document.getElementById('pl-bulk-delete-btn').style.display = count > 0 ? 'block' : 'none';
         }
 
         eel.expose(update_progress);
@@ -223,115 +373,151 @@
         }
 
         async function triggerUpload() {
-            showStatus("Select files in the popup...", false);
             document.getElementById('upload-btn').disabled = true;
             document.getElementById('progress-container').style.display = 'block';
             document.getElementById('progress-text').style.display = 'block';
             document.getElementById('progress-bar').style.width = '0%';
-            
             let res = await eel.upload_files()();
-
             document.getElementById('upload-btn').disabled = false;
             setTimeout(() => {
                 document.getElementById('progress-container').style.display = 'none';
                 document.getElementById('progress-text').style.display = 'none';
             }, 3000);
-
-            if (res.status === "success") { showStatus("✅ Upload complete!"); loadData(); }
+            if (res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Upload complete!"); loadData(); }
             else if (res.status === "cancelled") { document.getElementById('status-toast').style.display = 'none'; }
-            else if (res.status === "error") { showStatus("❌ Upload failed: " + res.message, false); }
+            else if (res.status === "error") { showStatus("<i class='fa-solid fa-xmark'></i> Upload failed: " + res.message, false); }
         }
 
         async function syncPlaylist() {
             let sel = document.getElementById('playlist-select').value;
-            if(!sel) return alert("Select a playlist!");
+            if(!sel) return alert(t('msgSelectPlTarget'));
             showStatus("Syncing...", false);
             let res = await eel.sync_playlist(sel)();
-            if(res.status === "success") {
-                showStatus("✅ Synced!");
-                loadPlaylistContent();
-            } else showStatus("❌ Failed: " + res.message, false);
+            if(res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Synced!"); loadData(); loadPlaylistContent(); }
+            else showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false);
         }
 
         async function addYouTube() {
             let sel = document.getElementById('playlist-select').value;
-            let url = document.getElementById('youtube-url').value;
+            let text = document.getElementById('youtube-urls').value;
             
-            if(!sel) return alert("Please select a target playlist first!");
-            if(!url.includes("youtube.com") && !url.includes("youtu.be")) return alert("Please enter a valid YouTube URL!");
+            if(!sel) return alert(t('msgSelectPlTarget'));
             
-            showStatus("Adding YouTube Link...", false);
-            let res = await eel.add_youtube_link(sel, url)();
+            let urls = text.split('\n').map(u => u.trim()).filter(u => u.includes("youtube.com") || u.includes("youtu.be"));
+            if(urls.length === 0) return alert(t('msgValidYt'));
             
-            if(res.status === "success") {
-                showStatus("✅ YouTube Link added!");
-                document.getElementById('youtube-url').value = ""; 
-                loadPlaylistContent();
-            } else {
-                showStatus("❌ Failed: " + res.message, false);
+            showStatus(`Saving ${urls.length} link(s)...`, false);
+            let res = await eel.add_youtube_links(sel, urls)();
+            
+            if(res.status === "success") { 
+                showStatus(`<i class='fa-solid fa-check'></i> Added ${res.count} links!`); 
+                document.getElementById('youtube-urls').value = ""; 
+                loadPlaylistContent(); 
             }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
         }
 
         async function loadPlaylistContent() {
             let sel = document.getElementById('playlist-select').value;
             let viewer = document.getElementById('playlist-viewer');
+            document.getElementById('pl-search').value = ""; 
             
-            if(!sel) {
-                viewer.innerHTML = "<i>Select a playlist above to view its contents...</i>";
-                return;
-            }
-
-            viewer.innerHTML = "<i>Loading content from server...</i>";
+            if(!sel) { viewer.innerHTML = t('selectPl'); return; }
+            viewer.innerHTML = t('msgLoading');
             let res = await eel.get_playlist_content(sel)();
-            
             if(res.status === "success") {
-                if(res.lines.length === 0) {
-                    viewer.innerHTML = "<i>Playlist is empty.</i>";
-                } else {
+                if(res.lines.length === 0) { viewer.innerHTML = t('msgPlEmpty'); }
+                else {
                     let html = "";
-                    res.lines.forEach(line => {
+                    res.lines.forEach((line, index) => {
                         let isYoutube = line.includes("youtube.com") || line.includes("youtu.be");
-                        let color = isYoutube ? "#e74c3c" : "#e0e0e0";
+                        let color = isYoutube ? "#e74c3c" : "#3498db";
+                        let icon = isYoutube ? "<i class='fa-brands fa-youtube'></i>" : "<i class='fa-solid fa-music'></i>";
+                        
+                        if(line.startsWith("#")) { color = "#aaa"; icon = "<i class='fa-solid fa-hashtag'></i>"; }
                         let safeLine = line.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                         
+                        // Checkbox hinzugefügt
                         html += `
                         <div class="pl-line">
-                            <span class="pl-line-text" style="color: ${color};">${line}</span>
-                            <button class="pl-del-btn" onclick="deleteFromPlaylist('${safeLine}')" title="Delete this entry">✖</button>
+                            <input type="checkbox" class="pl-checkbox" value="${index}" onchange="togglePlBulk()">
+                            <span class="pl-line-text" style="color: ${color};">${icon} ${line}</span>
+                            <button class="pl-del-btn" onclick="deleteFromPlaylist(${index}, '${safeLine}')" title="Delete this entry"><i class="fa-solid fa-xmark"></i></button>
                         </div>`;
                     });
                     viewer.innerHTML = html;
                 }
-            } else {
-                viewer.innerHTML = `<i style="color: #e74c3c;">Failed to load: ${res.message}</i>`;
-            }
+                togglePlBulk(); // Button verstecken
+            } else { viewer.innerHTML = `<i style="color: #e74c3c;">Failed to load: ${res.message}</i>`; }
         }
 
-        // NEU: Funktion zum Löschen einzelner Einträge aus der Playlist
-        async function deleteFromPlaylist(lineText) {
+        function filterPlaylist() {
+            let term = document.getElementById('pl-search').value.toLowerCase();
+            let lines = document.querySelectorAll('.pl-line');
+            lines.forEach(line => {
+                let text = line.querySelector('.pl-line-text').innerText.toLowerCase();
+                if(text.includes(term)) line.style.display = 'flex';
+                else line.style.display = 'none';
+            });
+        }
+
+        async function deleteFromPlaylist(index, lineText) {
             let sel = document.getElementById('playlist-select').value;
             if(!sel) return;
+            if(!confirm(t('msgDeleteLineWarn').replace('{name}', lineText))) return;
+            showStatus("Deleting...", false);
+            let res = await eel.delete_playlist_line(sel, index)();
+            if(res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Deleted!"); loadPlaylistContent(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
+        }
+
+        // NEUE FUNKTION: Mehrere Zeilen in der Playlist löschen
+        async function bulkDeletePlaylist() {
+            let sel = document.getElementById('playlist-select').value;
+            if(!sel) return;
+            let indices = Array.from(document.querySelectorAll('.pl-checkbox:checked')).map(cb => cb.value);
+            if(!confirm(t('msgDeleteBulkWarn').replace('{count}', indices.length))) return;
             
-            if(!confirm(`Do you really want to remove this entry from the playlist?\n\n${lineText}`)) return;
-            
-            showStatus("Deleting entry...", false);
-            let res = await eel.delete_playlist_line(sel, lineText)();
-            
-            if(res.status === "success") {
-                showStatus("✅ Entry deleted!");
-                loadPlaylistContent(); // Ansicht neu laden
-            } else {
-                showStatus("❌ Failed: " + res.message, false);
-            }
+            showStatus("Deleting...", false);
+            let res = await eel.delete_playlist_lines(sel, indices)();
+            if(res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Deleted!"); loadPlaylistContent(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
         }
 
         async function bulkDelete() {
             let files = Array.from(document.querySelectorAll('.song-checkbox:checked')).map(cb => cb.value);
-            if(!confirm(`Delete ${files.length} selected files?`)) return;
+            if(!confirm(t('msgDeleteBulkWarn').replace('{count}', files.length))) return;
             showStatus("Deleting...", false);
             let res = await eel.delete_bulk(files)();
-            if(res.status === "success") { showStatus("✅ Deleted!"); loadData(); }
-            else { showStatus("❌ Failed: " + res.message, false); }
+            if(res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Deleted!"); loadData(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
+        }
+
+        async function createPlaylist() {
+            let name = prompt(t('msgPromptNewPl'));
+            if (!name) return;
+            showStatus("Creating...", false);
+            let res = await eel.create_playlist(name)();
+            if (res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Created!"); await loadData(); document.getElementById('playlist-select').value = res.file; loadPlaylistContent(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
+        }
+
+        async function deletePlaylist() {
+            let sel = document.getElementById('playlist-select').value;
+            if (!sel) return alert(t('msgSelectPlTarget'));
+            if (!confirm(t('msgDeletePlWarn').replace('{name}', sel))) return;
+            showStatus("Deleting...", false);
+            let res = await eel.delete_playlist(sel)();
+            if (res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Deleted!"); document.getElementById('playlist-viewer').innerHTML = t('selectPl'); await loadData(); }
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
+        }
+
+        async function deleteBackup(filename) {
+            if(!confirm(t('msgDeleteBakWarn').replace('{name}', filename))) return;
+            showStatus("Deleting...", false);
+            let res = await eel.delete_backup(filename)();
+            if(res.status === "success") { showStatus("<i class='fa-solid fa-check'></i> Deleted!"); loadData(); } 
+            else { showStatus("<i class='fa-solid fa-xmark'></i> Failed: " + res.message, false); }
         }
 
         init();

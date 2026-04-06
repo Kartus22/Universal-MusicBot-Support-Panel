@@ -54,9 +54,13 @@ def get_data(search_query=""):
     try:
         client, proto = get_client(conf)
         playlists = []
+        backups = []
         songs_data = []
         if proto == 'SFTP':
-            try: playlists = [f for f in client.listdir(conf['playlist_folder']) if f.lower().endswith('.txt')]
+            try: 
+                pl_files = client.listdir(conf['playlist_folder'])
+                playlists = [f for f in pl_files if f.lower().endswith('.txt')]
+                backups = [f for f in pl_files if f.lower().endswith('.bak')]
             except: pass
             for attr in client.listdir_attr(conf['media_path']):
                 if attr.filename.lower().endswith(('.mp3', '.opus', '.m4a', '.wav')):
@@ -65,7 +69,9 @@ def get_data(search_query=""):
         else:
             try:
                 client.cwd(conf['playlist_folder'])
-                playlists = [f for f in client.nlst() if f.lower().endswith('.txt')]
+                pl_files = client.nlst()
+                playlists = [f for f in pl_files if f.lower().endswith('.txt')]
+                backups = [f for f in pl_files if f.lower().endswith('.bak')]
                 client.cwd('/')
             except: pass
             client.cwd(conf['media_path'])
@@ -82,7 +88,8 @@ def get_data(search_query=""):
             songs_all = [s for s in songs_all if search_query in s['name'].lower()]
 
         return {
-            "playlists": playlists,
+            "playlists": sorted(playlists),
+            "backups": sorted(backups),
             "songs_recent": songs_recent,
             "songs_all": songs_all,
             "conf": conf
@@ -124,6 +131,22 @@ def sync_playlist(target):
     conf = load_config()
     try:
         client, proto = get_client(conf)
+        
+        rem_p = conf['playlist_folder'] + "/" + target
+        bak_p = rem_p + ".bak"
+        local_bak = "temp_bak.txt"
+        try:
+            if proto == 'FTP':
+                client.cwd('/')
+                with open(local_bak, 'wb') as fb: client.retrbinary(f"RETR {rem_p}", fb.write)
+                with open(local_bak, 'rb') as rb: client.storbinary(f"STOR {bak_p}", rb)
+            else:
+                client.get(rem_p, local_bak)
+                client.put(local_bak, bak_p)
+            if os.path.exists(local_bak): os.remove(local_bak)
+        except Exception:
+            pass 
+            
         if proto == 'FTP':
             client.cwd(conf['media_path'])
             songs = sorted([f for f in client.nlst() if f.lower().endswith(('.mp3', '.opus', '.m4a', '.wav'))])
@@ -135,7 +158,6 @@ def sync_playlist(target):
         with open(local_p, "w", encoding="utf-8", newline='\n') as f:
             for s in songs: f.write(f"file://{s}\n")
             
-        rem_p = conf['playlist_folder'] + "/" + target
         if proto == 'FTP':
             client.cwd('/') 
             with open(local_p, 'rb') as rb: client.storbinary(f"STOR {rem_p}", rb)
@@ -150,7 +172,7 @@ def sync_playlist(target):
         return {"status": "error", "message": str(e)}
 
 @eel.expose
-def add_youtube_link(target, youtube_url):
+def add_youtube_links(target, urls_list):
     conf = load_config()
     try:
         client, proto = get_client(conf)
@@ -172,7 +194,9 @@ def add_youtube_link(target, youtube_url):
 
         with open(local_p, "a", encoding="utf-8", newline='\n') as f:
             if content and not content.endswith('\n'): f.write('\n')
-            f.write(f"{youtube_url}\n")
+            for url in urls_list:
+                if url.strip():
+                    f.write(f"{url.strip()}\n")
 
         if proto == 'FTP':
             client.cwd('/')
@@ -183,7 +207,7 @@ def add_youtube_link(target, youtube_url):
             client.close()
 
         if os.path.exists(local_p): os.remove(local_p)
-        return {"status": "success"}
+        return {"status": "success", "count": len(urls_list)}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
@@ -217,14 +241,17 @@ def get_playlist_content(target):
         return {"status": "error", "message": str(e)}
 
 @eel.expose
-def delete_playlist_line(target, line_to_delete):
+def delete_playlist_line(target, line_index):
+    return delete_playlist_lines(target, [line_index])
+
+@eel.expose
+def delete_playlist_lines(target, indices):
     conf = load_config()
     try:
         client, proto = get_client(conf)
         rem_p = conf['playlist_folder'] + "/" + target
-        local_p = "temp_del.txt"
+        local_p = "temp_del_multi.txt"
 
-        # 1. Datei runterladen
         if proto == 'FTP':
             client.cwd('/')
             try:
@@ -234,17 +261,18 @@ def delete_playlist_line(target, line_to_delete):
             try: client.get(rem_p, local_p)
             except: pass
 
-        # 2. Zeile filtern und neu schreiben
         if os.path.exists(local_p):
             with open(local_p, "r", encoding="utf-8") as f:
-                lines = f.readlines()
+                lines = [line for line in f.readlines() if line.strip()]
+            
+            # Konvertiere sicherheitshalber in Integers
+            indices = [int(i) for i in indices]
             
             with open(local_p, "w", encoding="utf-8", newline='\n') as f:
-                for line in lines:
-                    if line.strip() != line_to_delete.strip():
+                for i, line in enumerate(lines):
+                    if i not in indices:
                         f.write(line)
 
-        # 3. Datei wieder hochladen
         if proto == 'FTP':
             client.cwd('/')
             with open(local_p, 'rb') as rb: client.storbinary(f"STOR {rem_p}", rb)
@@ -271,6 +299,63 @@ def delete_bulk(files):
             except: pass
         if proto == 'FTP': client.quit()
         else: client.close()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def create_playlist(filename):
+    if not filename.lower().endswith('.txt'):
+        filename += '.txt'
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + filename
+        local_p = "temp_new_pl.txt"
+        
+        with open(local_p, "w", encoding="utf-8") as f: pass 
+            
+        if proto == 'FTP':
+            client.cwd('/')
+            with open(local_p, 'rb') as rb: client.storbinary(f"STOR {rem_p}", rb)
+            client.quit()
+        else:
+            client.put(local_p, rem_p)
+            client.close()
+            
+        if os.path.exists(local_p): os.remove(local_p)
+        return {"status": "success", "file": filename}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def delete_playlist(filename):
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + filename
+        if proto == 'FTP':
+            client.delete(rem_p)
+            client.quit()
+        else:
+            client.remove(rem_p)
+            client.close()
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def delete_backup(filename):
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + filename
+        if proto == 'FTP':
+            client.delete(rem_p)
+            client.quit()
+        else:
+            client.remove(rem_p)
+            client.close()
         return {"status": "success"}
     except Exception as e:
         return {"status": "error", "message": str(e)}
