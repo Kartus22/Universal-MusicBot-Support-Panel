@@ -5,15 +5,14 @@
     <script type="text/javascript" src="/eel.js"></script>
     <style>
         body { font-family: 'Segoe UI', sans-serif; background: #121212; color: #e0e0e0; padding: 20px; }
-        .container { max-width: 900px; margin: auto; padding-bottom: 80px; }
+        .container { max-width: 1000px; margin: auto; padding-bottom: 80px; }
         .card { background: #1e1e1e; padding: 15px; border-radius: 10px; margin-bottom: 20px; border-left: 5px solid #3498db; }
         .btn { padding: 10px 15px; border-radius: 5px; border: none; cursor: pointer; font-weight: bold; }
         .btn-sync { background: #9b59b6; color: white; flex-grow: 1; }
         .btn-upload { background: #2ecc71; color: white; width: 100%; margin-top: 15px; }
         .btn-delete-bulk { background: #e74c3c; color: white; margin-bottom: 15px; display: none; width: 100%; }
-        .song-item { background: #2c2c2c; margin: 5px 0; padding: 12px; border-radius: 5px; display: flex; align-items: center; gap: 15px; }
+        .song-item { background: #2c2c2c; margin: 5px 0; padding: 10px; border-radius: 5px; display: flex; align-items: center; gap: 10px; font-size: 0.9em; }
         
-        /* Angepasste Inputs für sauberes Layout */
         input[type="text"], input[type="password"], select { padding: 10px; background: #252525; color: white; border: 1px solid #444; border-radius: 5px; width: 100%; margin-bottom: 10px; box-sizing: border-box; }
         input[type="checkbox"] { transform: scale(1.3); cursor: pointer; width: auto; margin-bottom: 0; }
         
@@ -25,7 +24,17 @@
         .progress-bar { height: 20px; width: 0%; background-color: #2ecc71; transition: width 0.3s; }
         .progress-text { margin-top: 5px; font-size: 0.9em; color: #aaa; text-align: center; display: none; }
 
-        /* Views */
+        /* Split Screen CSS */
+        .split-view { display: flex; gap: 20px; align-items: flex-start; }
+        .split-left { flex: 1; min-width: 0; }
+        .split-right { flex: 1; min-width: 0; position: sticky; top: 20px;}
+        .playlist-viewer { background: #121212; padding: 10px; border-radius: 5px; height: 400px; overflow-y: auto; font-family: monospace; font-size: 0.85em; border: 1px solid #333;}
+        .pl-line { padding: 4px; border-bottom: 1px solid #222; display: flex; justify-content: space-between; align-items: center;}
+        .pl-line:hover { background: #252525; }
+        .pl-line-text { flex-grow: 1; word-break: break-all; margin-right: 10px;}
+        .pl-del-btn { background: none; border: none; color: #e74c3c; cursor: pointer; font-size: 1.2em; padding: 0 5px; }
+        .pl-del-btn:hover { color: #c0392b; transform: scale(1.2); }
+
         #setup-view, #main-view { display: none; }
     </style>
 </head>
@@ -51,37 +60,66 @@
         <p id="conn-info">Connected: <b>...</b> | <a href="#" onclick="showSetup()" style="color:#3498db;">Settings</a></p>
         
         <div class="card" style="border-left-color: #9b59b6;">
-            <h3>🔄 Synchronize Playlist</h3>
+            <h3>📋 Playlist Management</h3>
+            <select id="playlist-select" style="width: 100%; margin-bottom: 15px;" onchange="loadPlaylistContent()"></select>
+
+            <div class="sync-bar" style="flex-wrap: wrap;">
+                <button onclick="syncPlaylist()" class="btn btn-sync" style="background: #8e44ad;">🔄 Sync Local Media to Playlist</button>
+                <div style="width: 100%; font-size: 0.8em; color: #aaa; text-align: center; margin-top: -5px;">
+                    <i>(Only click this to write uploaded media files into the playlist. YouTube links below are saved automatically!)</i>
+                </div>
+            </div>
+            <hr style="border: 0; border-top: 1px solid #444; margin: 15px 0;">
             <div class="sync-bar">
-                <select id="playlist-select" style="flex-grow: 2; margin-bottom: 0;"></select>
-                <button onclick="syncPlaylist()" class="btn btn-sync">Update Selected File</button>
+                <input type="text" id="youtube-url" placeholder="https://www.youtube.com/watch?v=..." style="flex-grow: 2; margin-bottom: 0;">
+                <button onclick="addYouTube()" class="btn btn-sync" style="background: #e74c3c;">▶️ Add YouTube Link</button>
             </div>
         </div>
 
         <div class="card">
-            <h3>🚀 Upload</h3>
-            <button id="upload-btn" onclick="triggerUpload()" class="btn btn-upload">Select Files to Upload...</button>
-            
-            <div id="progress-container" class="progress-container">
-                <div id="progress-bar" class="progress-bar"></div>
-            </div>
+            <h3>🚀 Upload Media Files</h3>
+            <button id="upload-btn" onclick="triggerUpload()" class="btn btn-upload" style="margin-top: 0;">Select Files to Upload...</button>
+            <div id="progress-container" class="progress-container"><div id="progress-bar" class="progress-bar"></div></div>
             <div id="progress-text" class="progress-text">0 / 0 - Preparing...</div>
         </div>
 
-        <button id="bulk-delete-btn" onclick="bulkDelete()" class="btn btn-delete-bulk">🗑️ Delete Selected Songs</button>
+        <div class="split-view">
+            
+            <div class="split-left">
+                <div class="card" style="border-left-color: #f1c40f;">
+                    <h3>📂 Server Media Files</h3>
+                    <button id="bulk-delete-btn" onclick="bulkDelete()" class="btn btn-delete-bulk">🗑️ Delete Selected</button>
+                    
+                    <div class="sync-bar" style="margin-bottom: 15px;">
+                        <input type="text" id="search-input" placeholder="Search files..." style="margin-bottom:0;">
+                        <button class="btn" onclick="loadData()" style="background:#444; color:white;">🔍</button>
+                    </div>
 
-        <div class="card" style="border-left-color: #f1c40f;" id="recent-box">
-            <h3>✨ Recently Added</h3>
-            <div id="recent-list"></div>
+                    <div id="recent-box" style="margin-bottom: 15px; border-bottom: 1px solid #444; padding-bottom: 10px;">
+                        <h4 style="margin-top: 0; color: #f1c40f;">✨ Recently Added</h4>
+                        <div id="recent-list"></div>
+                    </div>
+
+                    <div id="song-list"></div>
+                </div>
+            </div>
+
+            <div class="split-right">
+                <div class="card" style="border-left-color: #e67e22; height: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h3 style="margin: 0;">📄 Playlist Content</h3>
+                        <button onclick="loadPlaylistContent()" class="btn" style="background: #444; color: white; padding: 5px 10px; font-size: 0.8em;">🔄 Refresh</button>
+                    </div>
+                    <p style="font-size: 0.8em; color: #aaa;">Contents of the currently selected .txt file:</p>
+                    
+                    <div id="playlist-viewer" class="playlist-viewer">
+                        <i>Select a playlist above to view its contents...</i>
+                    </div>
+                </div>
+            </div>
+
         </div>
-
-        <div class="card" style="border-left-color: #95a5a6; display: flex; gap: 10px;">
-            <input type="text" id="search-input" placeholder="Search..." style="margin-bottom:0;">
-            <button class="btn" onclick="loadData()" style="background:#444; color:white;">🔍</button>
         </div>
-
-        <div id="song-list"></div>
-    </div>
 
     <script>
         // Init
@@ -141,11 +179,16 @@
             
             if (data.error) { showStatus("❌ " + data.error, false); return; }
 
-            document.getElementById('conn-info').innerHTML = `Connected: <b>${data.conf.host} (${data.conf.proto})</b> | <a href="#" onclick="showSetup()" style="color:#3498db;">Settings</a>`;
+            document.getElementById('conn-info').innerHTML = `Connected: <b>${data.conf.host} (${data.conf.proto})</b>`;
 
             let pSelect = document.getElementById('playlist-select');
+            let currentSelection = pSelect.value;
+            
             pSelect.innerHTML = '<option value="" disabled selected>Select target .txt file...</option>';
-            data.playlists.forEach(p => pSelect.innerHTML += `<option value="${p}">${p}</option>`);
+            data.playlists.forEach(p => {
+                let sel = (p === currentSelection) ? "selected" : "";
+                pSelect.innerHTML += `<option value="${p}" ${sel}>${p}</option>`;
+            });
 
             const renderSongs = (arr, containerId) => {
                 let html = "";
@@ -172,7 +215,6 @@
             document.getElementById('bulk-delete-btn').style.display = count > 0 ? 'block' : 'none';
         }
 
-        // --- FORTSCHRITTSANZEIGE FÜR PYTHON ---
         eel.expose(update_progress);
         function update_progress(current, total, filename) {
             let percent = (current / total) * 100;
@@ -182,18 +224,14 @@
 
         async function triggerUpload() {
             showStatus("Select files in the popup...", false);
-            
             document.getElementById('upload-btn').disabled = true;
-            document.getElementById('upload-btn').style.opacity = "0.5";
             document.getElementById('progress-container').style.display = 'block';
             document.getElementById('progress-text').style.display = 'block';
             document.getElementById('progress-bar').style.width = '0%';
-            document.getElementById('progress-text').innerText = "Waiting for selection...";
-
+            
             let res = await eel.upload_files()();
 
             document.getElementById('upload-btn').disabled = false;
-            document.getElementById('upload-btn').style.opacity = "1";
             setTimeout(() => {
                 document.getElementById('progress-container').style.display = 'none';
                 document.getElementById('progress-text').style.display = 'none';
@@ -209,8 +247,82 @@
             if(!sel) return alert("Select a playlist!");
             showStatus("Syncing...", false);
             let res = await eel.sync_playlist(sel)();
-            if(res.status === "success") showStatus("✅ Synced!");
-            else showStatus("❌ Failed: " + res.message, false);
+            if(res.status === "success") {
+                showStatus("✅ Synced!");
+                loadPlaylistContent();
+            } else showStatus("❌ Failed: " + res.message, false);
+        }
+
+        async function addYouTube() {
+            let sel = document.getElementById('playlist-select').value;
+            let url = document.getElementById('youtube-url').value;
+            
+            if(!sel) return alert("Please select a target playlist first!");
+            if(!url.includes("youtube.com") && !url.includes("youtu.be")) return alert("Please enter a valid YouTube URL!");
+            
+            showStatus("Adding YouTube Link...", false);
+            let res = await eel.add_youtube_link(sel, url)();
+            
+            if(res.status === "success") {
+                showStatus("✅ YouTube Link added!");
+                document.getElementById('youtube-url').value = ""; 
+                loadPlaylistContent();
+            } else {
+                showStatus("❌ Failed: " + res.message, false);
+            }
+        }
+
+        async function loadPlaylistContent() {
+            let sel = document.getElementById('playlist-select').value;
+            let viewer = document.getElementById('playlist-viewer');
+            
+            if(!sel) {
+                viewer.innerHTML = "<i>Select a playlist above to view its contents...</i>";
+                return;
+            }
+
+            viewer.innerHTML = "<i>Loading content from server...</i>";
+            let res = await eel.get_playlist_content(sel)();
+            
+            if(res.status === "success") {
+                if(res.lines.length === 0) {
+                    viewer.innerHTML = "<i>Playlist is empty.</i>";
+                } else {
+                    let html = "";
+                    res.lines.forEach(line => {
+                        let isYoutube = line.includes("youtube.com") || line.includes("youtu.be");
+                        let color = isYoutube ? "#e74c3c" : "#e0e0e0";
+                        let safeLine = line.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+                        
+                        html += `
+                        <div class="pl-line">
+                            <span class="pl-line-text" style="color: ${color};">${line}</span>
+                            <button class="pl-del-btn" onclick="deleteFromPlaylist('${safeLine}')" title="Delete this entry">✖</button>
+                        </div>`;
+                    });
+                    viewer.innerHTML = html;
+                }
+            } else {
+                viewer.innerHTML = `<i style="color: #e74c3c;">Failed to load: ${res.message}</i>`;
+            }
+        }
+
+        // NEU: Funktion zum Löschen einzelner Einträge aus der Playlist
+        async function deleteFromPlaylist(lineText) {
+            let sel = document.getElementById('playlist-select').value;
+            if(!sel) return;
+            
+            if(!confirm(`Do you really want to remove this entry from the playlist?\n\n${lineText}`)) return;
+            
+            showStatus("Deleting entry...", false);
+            let res = await eel.delete_playlist_line(sel, lineText)();
+            
+            if(res.status === "success") {
+                showStatus("✅ Entry deleted!");
+                loadPlaylistContent(); // Ansicht neu laden
+            } else {
+                showStatus("❌ Failed: " + res.message, false);
+            }
         }
 
         async function bulkDelete() {
@@ -222,7 +334,6 @@
             else { showStatus("❌ Failed: " + res.message, false); }
         }
 
-        // Start
         init();
     </script>
 </body>

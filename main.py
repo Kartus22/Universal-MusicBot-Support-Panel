@@ -92,7 +92,6 @@ def get_data(search_query=""):
 
 @eel.expose
 def upload_files():
-    # Öffnet einen nativen Dateiauswahldialog
     root = tk.Tk()
     root.withdraw()
     root.attributes('-topmost', True)
@@ -107,10 +106,7 @@ def upload_files():
         client, proto = get_client(conf)
         for index, filepath in enumerate(files):
             filename = os.path.basename(filepath)
-            
-            # Sende aktuelles Update an das Frontend (VOR dem Upload der Datei)
             eel.update_progress(index + 1, total_files, filename)()
-            
             rem = conf['media_path'] + "/" + filename
             if proto == 'FTP':
                 with open(filepath, 'rb') as rb: client.storbinary(f"STOR {rem}", rb)
@@ -135,7 +131,6 @@ def sync_playlist(target):
             sorted_attr = sorted([a for a in client.listdir_attr(conf['media_path']) if a.filename.lower().endswith(('.mp3', '.opus', '.m4a', '.wav'))], key=lambda x: x.st_mtime)
             songs = [a.filename for a in sorted_attr]
         
-        # Temp File lokal erzeugen
         local_p = "temp_playlist.txt"
         with open(local_p, "w", encoding="utf-8", newline='\n') as f:
             for s in songs: f.write(f"file://{s}\n")
@@ -149,6 +144,115 @@ def sync_playlist(target):
             client.put(local_p, rem_p)
             client.close()
             
+        if os.path.exists(local_p): os.remove(local_p)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def add_youtube_link(target, youtube_url):
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + target
+        local_p = "temp_yt.txt"
+
+        if proto == 'FTP':
+            client.cwd('/')
+            try:
+                with open(local_p, 'wb') as fb: client.retrbinary(f"RETR {rem_p}", fb.write)
+            except: pass
+        else:
+            try: client.get(rem_p, local_p)
+            except: pass
+
+        content = ""
+        if os.path.exists(local_p):
+            with open(local_p, "r", encoding="utf-8") as f: content = f.read()
+
+        with open(local_p, "a", encoding="utf-8", newline='\n') as f:
+            if content and not content.endswith('\n'): f.write('\n')
+            f.write(f"{youtube_url}\n")
+
+        if proto == 'FTP':
+            client.cwd('/')
+            with open(local_p, 'rb') as rb: client.storbinary(f"STOR {rem_p}", rb)
+            client.quit()
+        else:
+            client.put(local_p, rem_p)
+            client.close()
+
+        if os.path.exists(local_p): os.remove(local_p)
+        return {"status": "success"}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def get_playlist_content(target):
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + target
+        local_p = "temp_view.txt"
+        lines = []
+
+        if proto == 'FTP':
+            client.cwd('/')
+            try:
+                with open(local_p, 'wb') as fb: client.retrbinary(f"RETR {rem_p}", fb.write)
+            except: pass
+            client.quit()
+        else:
+            try: client.get(rem_p, local_p)
+            except: pass
+            client.close()
+
+        if os.path.exists(local_p):
+            with open(local_p, "r", encoding="utf-8") as f:
+                lines = [line.strip() for line in f.readlines() if line.strip()]
+            os.remove(local_p)
+
+        return {"status": "success", "lines": lines}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+@eel.expose
+def delete_playlist_line(target, line_to_delete):
+    conf = load_config()
+    try:
+        client, proto = get_client(conf)
+        rem_p = conf['playlist_folder'] + "/" + target
+        local_p = "temp_del.txt"
+
+        # 1. Datei runterladen
+        if proto == 'FTP':
+            client.cwd('/')
+            try:
+                with open(local_p, 'wb') as fb: client.retrbinary(f"RETR {rem_p}", fb.write)
+            except: pass
+        else:
+            try: client.get(rem_p, local_p)
+            except: pass
+
+        # 2. Zeile filtern und neu schreiben
+        if os.path.exists(local_p):
+            with open(local_p, "r", encoding="utf-8") as f:
+                lines = f.readlines()
+            
+            with open(local_p, "w", encoding="utf-8", newline='\n') as f:
+                for line in lines:
+                    if line.strip() != line_to_delete.strip():
+                        f.write(line)
+
+        # 3. Datei wieder hochladen
+        if proto == 'FTP':
+            client.cwd('/')
+            with open(local_p, 'rb') as rb: client.storbinary(f"STOR {rem_p}", rb)
+            client.quit()
+        else:
+            client.put(local_p, rem_p)
+            client.close()
+
         if os.path.exists(local_p): os.remove(local_p)
         return {"status": "success"}
     except Exception as e:
@@ -173,4 +277,4 @@ def delete_bulk(files):
 
 if __name__ == '__main__':
     eel.init('web')
-    eel.start('index.html', size=(950, 750), mode='chrome')
+    eel.start('index.html', size=(1100, 800), mode='chrome')
