@@ -41,7 +41,10 @@ On the first start, you will be prompted to enter your server details:
 *Developed to simplify remote music management.*
 
 <img width="936" height="743" alt="image" src="https://github.com/user-attachments/assets/a0640e5a-3a02-4417-97de-7f83550461b2" />
-<img width="936" height="1166" alt="image" src="https://github.com/user-attachments/assets/61cd01e5-85be-4138-b6fe-073d61ed9fc8" />
-<img width="936" height="1166" alt="image" src="https://github.com/user-attachments/assets/700e720c-737e-445d-bafb-7c008d5a545b" />
+<img width="1084" height="1125" alt="image" src="https://github.com/user-attachments/assets/da71eb2f-0996-4471-a109-54a94e708573" />
+<img width="1084" height="1125" alt="image" src="https://github.com/user-attachments/assets/3bf12599-f3f5-4330-826c-fdc92b7b2277" />
+<img width="1084" height="1125" alt="image" src="https://github.com/user-attachments/assets/2c595b91-4441-48ec-9dff-a8b5913a32df" />
+
+
 
 
